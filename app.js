@@ -1,37 +1,38 @@
 require('dotenv').config();
 const Influx = require('./lib/influx');
-const SlackBot = require('slackbots');
+const InfluxAqi = require('./lib/InfluxAqi');
 const Weather = require('./lib/weather');
+const Aqi = require('./lib/aqi');
 
-// Create & Configure Slackbot
-let bot = new SlackBot({
-    token: process.env.SLACK_API_TOKEN,
-    name: process.env.SLACK_BOT_NAME,
-});
-let channel = process.env.SLACK_CHANNEL;
-let params = {icon_emoji: ':wu:'};
+console.log("Starting openweather-influxdb...")
+
 let updateFrequency = process.env.UPDATE_FREQUENCY;
-
-// Alert To Slax=ck We have Started
-bot.postMessageToGroup(channel, 'Portland Weather Has Started', params);
-
-// Catch errors
-bot.on('error', (data) => {
-    console.log(data);
-});
+let updateFrequencyAqi = process.env.UPDATE_FREQUENCY_AQI;
 
 function getData() {
     Weather.getData().then(Influx.writeInflux).then(function() {
         setTimeout(getData, updateFrequency);
     }).catch(function(e) {
-        bot.postMessageToGroup(channel, 'Error: ' + e.message);
+
         console.log('Error: ' + e.message);
         // Retry on error, but timeout for 5 minutes
         setTimeout(getData, 300000);
     });
 };
 
+function getAqiData() {
+    Aqi.getAqiData().then(InfluxAqi.writeInfluxAqi).then(function() {
+        setTimeout(getAqiData, updateFrequencyAqi);
+    }).catch(function(e) {
+
+        console.log('Error: ' + e.message);
+        // Retry on error, but timeout for 5 minutes
+        setTimeout(getAqiData, 300000);
+    });
+};
+
 // Start after 10 seconds
 setTimeout(function() {
-    getData();
+    // getData();
+    getAqiData();
 }, 10000);
