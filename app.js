@@ -33,6 +33,6 @@ function getAqiData() {
 
 // Start after 10 seconds
 setTimeout(function() {
-    // getData();
+    getData();
     getAqiData();
 }, 10000);
